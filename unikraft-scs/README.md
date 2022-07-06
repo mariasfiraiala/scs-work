@@ -29,4 +29,4 @@ Use [this gist](https://gist.github.com/mariasfiraiala/6e5d5ad67952c46b79cb12b98
     1. handles the event (`uk_raise_event_ptr`-> defined in `unikraft/include/uk/event.h`)
     1. dumps registers and terminates execution
 
-* more about EL0, EL1, EL2, EL3 [here] (https://developer.arm.com/documentation/102412/0100/Privilege-and-Exception-levels)
+* more about EL0, EL1, EL2, EL3 [here](https://developer.arm.com/documentation/102412/0100/Privilege-and-Exception-levels)
