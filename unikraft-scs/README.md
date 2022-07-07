@@ -55,8 +55,12 @@ Implementation:
 
 * `ukplat_entry` (of real interest to me)
     1. configures a multitude of functionalities, based on macros
+    
         -> allocator
+        
         -> scheduler
+        
         -> param (TODO: ask about this one)
+        
     1. if the program requires multiple threads, enable the the main thread and its subsequent threads (TODO: ask about this)
     1. otherwise, just enables interrupts and calls the `main_thread_func`
