@@ -1,8 +1,11 @@
 # Issues found while working with clang's scs support on Unikraft
 
 ## Additions
-1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/1
-2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld/pull/1
+1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/2
+
+What's very interesting is the fact that even though the main() is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a segfault.
+
+[Here](https://imgur.com/a/ykA237e)'s how it looks like.
 
 ## Setup
 
