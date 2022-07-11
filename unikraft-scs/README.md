@@ -2,6 +2,7 @@
 
 ## Additions
 1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/2
+2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld (needed for scs flags and additional constructor in `main.c`)
 
 What's very interesting is the fact that even though the main() is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a segfault.
 
@@ -34,6 +35,8 @@ Arguments:  "app-helloworld"
 [    0.015243] CRIT: [libkvmplat] <traps_arm64.c @  172> 	 x28 ~ x29: 0x0000000000000000 0x0000000047ffff40
 
 ```
+
+(**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
 
 ## Setup
 
