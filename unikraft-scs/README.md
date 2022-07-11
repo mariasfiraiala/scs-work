@@ -5,7 +5,35 @@
 
 What's very interesting is the fact that even though the main() is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a segfault.
 
-[Here](https://imgur.com/a/ykA237e)'s how it looks like.
+This how it looks like:
+```
+Powered by
+o.   .o       _ _               __ _
+Oo   Oo  ___ (_) | __ __  __ _ ' _) :_
+oO   oO ' _ `| | |/ /  _)' _` | |_|  _)
+oOo oOO| | | | |   (| | | (_) |  _) :_
+ OoOoO ._, ._:_:_,\_._,  .__,_:_, \___)
+          Hyperion 0.9.0~7f62c36-custom
+Hello
+Hello world!
+Arguments:  "app-helloworld"
+[    0.012419] CRIT: [libkvmplat] <traps_arm64.c @  193> EL1 sync trap caught
+[    0.012943] CRIT: [libkvmplat] <traps_arm64.c @  159> 	 SP       : 0x0000000047fffe20
+[    0.013078] CRIT: [libkvmplat] <traps_arm64.c @  160> 	 ESR_EL1  : 0x0000000096000004
+[    0.013209] CRIT: [libkvmplat] <traps_arm64.c @  161> 	 ELR_EL1  : 0x0000000040108674
+[    0.013340] CRIT: [libkvmplat] <traps_arm64.c @  162> 	 LR (x30) : 0x0000000040113cb8
+[    0.013475] CRIT: [libkvmplat] <traps_arm64.c @  163> 	 PSTATE   : 0x0000000060000345
+[    0.013605] CRIT: [libkvmplat] <traps_arm64.c @  164> 	 FAR_EL1  : 0xfffffffffffffff8
+[    0.013794] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x00 ~ x03: 0x0000000000000000 0x0000000000000001 0x0000000040118e4f 0x0000000047fffac0
+[    0.014019] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x04 ~ x07: 0x0000000000000073 0x0000000000000050 0x000000004010db84 0x0000000040119943
+[    0.014225] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x08 ~ x11: 0x0000000000000001 0x0000000000000001 0x000000004011b000 0x000000000000000d
+[    0.014423] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x12 ~ x15: 0x000000000000000a 0x0000000009000000 0x0000000000000000 0x0000000000000000
+[    0.014630] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x16 ~ x19: 0x0000000000000000 0x0000000000000000 0x0000000000000000 0x0000000047ffff90
+[    0.014829] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x20 ~ x23: 0x000000004011ac08 0x000000004011ac08 0x0000000040143000 0x0000000000000009
+[    0.015030] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x24 ~ x27: 0x0000000000000031 0x0000000040000000 0x000000004011b018 0x000000004013d000
+[    0.015243] CRIT: [libkvmplat] <traps_arm64.c @  172> 	 x28 ~ x29: 0x0000000000000000 0x0000000047ffff40
+
+```
 
 ## Setup
 
