@@ -1,10 +1,10 @@
 # Issues found while working with clang's scs support on Unikraft
 
 ## Additions
-1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/2
+1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft
 2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld (needed for scs flags and additional constructor in `main.c`)
 
-What's very interesting is the fact that even though the main() is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a segfault.
+What's very interesting is the fact that even though the `main()` is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a trap.
 
 This how it looks like:
 ```
@@ -35,6 +35,12 @@ Arguments:  "app-helloworld"
 [    0.015243] CRIT: [libkvmplat] <traps_arm64.c @  172> 	 x28 ~ x29: 0x0000000000000000 0x0000000047ffff40
 
 ```
+
+After debugging using `gdb` (see how [here](https://gist.github.com/mariasfiraiala/34a7b5b41c4e5515c7f0ad8a2c220ef9)), I came to the conclusion that the problem arises from `unikraft/plat/kvm/arm/exceptions.S`.
+
+For some reason, one of the trap functions makes use of the `x18` register, even though it should be reserved for scs work only.
+
+Workaround: come up with a destructor. (TODO)
 
 (**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
 
