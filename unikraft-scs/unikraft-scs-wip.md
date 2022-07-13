@@ -6,7 +6,7 @@
 
 What's very interesting is the fact that even though the `main()` is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a trap.
 
-This how it looks like:
+This is how it looks like:
 ```
 Powered by
 o.   .o       _ _               __ _
@@ -38,9 +38,51 @@ Arguments:  "app-helloworld"
 
 After debugging using `gdb` (see how [here](https://gist.github.com/mariasfiraiala/34a7b5b41c4e5515c7f0ad8a2c220ef9)), I came to the conclusion that the problem arises from `unikraft/plat/kvm/arm/exceptions.S`.
 
-For some reason, one of the trap functions makes use of the `x18` register, even though it should be reserved for scs work only.
+Additional investigation using `gdb` revealed the fact that right before the last `printf("\n")` call from `main()` something (TODO: find out what) modifies the `x18` value, making it 0, so the trap that I get is due to the fact that in the function epilogue, `clang's` scs tries to dereference a NULL pointer.
 
-Workaround: come up with a destructor. (TODO)
+You'll find a snippet of the `gdb` investigation here:
+
+```
+main (argc=1, argv=0x4013c3d0 <ukplat_entry_argp.argv>)
+    at /home/maria/demo/02-hello-world-with-shadow-stack/apps/app-helloworld/main.c:35
+35      {
+(gdb) n
+40              printf("Hello world!\n");
+(gdb) p $x18
+$3 = 1207730200
+(gdb) n
+43              printf("Arguments: ");
+(gdb) p $x18
+$4 = 1207730200
+(gdb) n
+44              for (i=0; i<argc; ++i)
+(gdb) p $x18
+$5 = 1207730200
+(gdb) n
+45                      printf(" \"%s\"", argv[i]);
+(gdb) n
+44              for (i=0; i<argc; ++i)
+(gdb) p $x18
+$6 = 0
+(gdb) n
+46              printf("\n");
+(gdb) n
+61      }
+(gdb) n
+el1_sync ()
+    at /home/maria/demo/02-hello-world-with-shadow-stack/unikraft/plat/kvm/arm/exceptions.S:163
+163             ENTER_TRAP 1
+(gdb) n
+164             mov x0, sp
+(gdb) n
+165             mrs x1, far_el1
+(gdb) n
+166             bl trap_el1_sync
+(gdb) n
+[Inferior 1 (process 1) exited normally]
+
+```
+
 
 (**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
 
