@@ -107,6 +107,10 @@ New value = 0
 
 ```
 
+Update: After removing the problematic part (the `helloworld` arguments print), everything seems to be working just fine. (duhhh)
+
+Question: Why does `vsnprintf` totally ignore the `-ffixed-x18 -fno-exceptions` flags? Do I have to explicitly reserve `x18` for every single function in Unikraft? 
+
 
 (**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
 
