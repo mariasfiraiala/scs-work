@@ -38,7 +38,7 @@ Arguments:  "app-helloworld"
 
 After debugging using `gdb` (see how [here](https://gist.github.com/mariasfiraiala/34a7b5b41c4e5515c7f0ad8a2c220ef9)), I came to the conclusion that the problem arises from `unikraft/plat/kvm/arm/exceptions.S`.
 
-Additional investigation using `gdb` revealed the fact that right before the last `printf("\n")` call from `main()` something (TODO: find out what) modifies the `x18` value, making it 0, so the trap that I get is due to the fact that in the function epilogue, `clang's` scs tries to dereference a NULL pointer.
+Additional investigation using `gdb` revealed the fact that right before the last `printf("\n")` call from `main()`, `vsnprintf`  modifies the `x18` value, making it 0, so the trap that I get is due to the fact that in the function epilogue, `clang's` scs tries to dereference a NULL pointer.
 
 You'll find a snippet of the `gdb` investigation here:
 
@@ -80,6 +80,30 @@ el1_sync ()
 166             bl trap_el1_sync
 (gdb) n
 [Inferior 1 (process 1) exited normally]
+
+```
+
+```
+Breakpoint 1, main (argc=1, argv=0x47ffff90)
+    at /home/maria/demo/02-hello-world-with-shadow-stack/apps/app-helloworld/main.c:40
+40              printf("Hello world!\n");
+(gdb) watch $x18
+Watchpoint 2: $x18
+(gdb) n
+43              printf("Arguments: ");
+(gdb) n
+44              for (i=0; i<argc; ++i)
+(gdb) n
+45                      printf(" \"%s\"", argv[i]);
+(gdb) n
+
+Watchpoint 2: $x18
+
+Old value = 1207730200
+New value = 0
+0x000000004010d8c8 in vsnprintf (str=0x47fffae2 "guments: ", size=1022, fmt=0x40119943 "s\"", 
+    ap=...) at /home/maria/demo/02-hello-world-with-shadow-stack/unikraft/lib/nolibc/stdio.c:154
+154                     switch (ch = (unsigned char)*fmt++) {
 
 ```
 
