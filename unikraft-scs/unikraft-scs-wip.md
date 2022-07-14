@@ -2,115 +2,110 @@
 
 ## Additions
 1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft
-2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld (needed for scs flags and additional constructor in `main.c`)
+2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld/pull/2
 
-What's very interesting is the fact that even though the `main()` is somehow succesfully called and executed (the `HelloWorld` message is printed), I still get a trap.
+## Proof of concept
 
-This is how it looks like:
-```
-Powered by
-o.   .o       _ _               __ _
-Oo   Oo  ___ (_) | __ __  __ _ ' _) :_
-oO   oO ' _ `| | |/ /  _)' _` | |_|  _)
-oOo oOO| | | | |   (| | | (_) |  _) :_
- OoOoO ._, ._:_:_,\_._,  .__,_:_, \___)
-          Hyperion 0.9.0~7f62c36-custom
-Hello
-Hello world!
-Arguments:  "app-helloworld"
-[    0.012419] CRIT: [libkvmplat] <traps_arm64.c @  193> EL1 sync trap caught
-[    0.012943] CRIT: [libkvmplat] <traps_arm64.c @  159> 	 SP       : 0x0000000047fffe20
-[    0.013078] CRIT: [libkvmplat] <traps_arm64.c @  160> 	 ESR_EL1  : 0x0000000096000004
-[    0.013209] CRIT: [libkvmplat] <traps_arm64.c @  161> 	 ELR_EL1  : 0x0000000040108674
-[    0.013340] CRIT: [libkvmplat] <traps_arm64.c @  162> 	 LR (x30) : 0x0000000040113cb8
-[    0.013475] CRIT: [libkvmplat] <traps_arm64.c @  163> 	 PSTATE   : 0x0000000060000345
-[    0.013605] CRIT: [libkvmplat] <traps_arm64.c @  164> 	 FAR_EL1  : 0xfffffffffffffff8
-[    0.013794] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x00 ~ x03: 0x0000000000000000 0x0000000000000001 0x0000000040118e4f 0x0000000047fffac0
-[    0.014019] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x04 ~ x07: 0x0000000000000073 0x0000000000000050 0x000000004010db84 0x0000000040119943
-[    0.014225] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x08 ~ x11: 0x0000000000000001 0x0000000000000001 0x000000004011b000 0x000000000000000d
-[    0.014423] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x12 ~ x15: 0x000000000000000a 0x0000000009000000 0x0000000000000000 0x0000000000000000
-[    0.014630] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x16 ~ x19: 0x0000000000000000 0x0000000000000000 0x0000000000000000 0x0000000047ffff90
-[    0.014829] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x20 ~ x23: 0x000000004011ac08 0x000000004011ac08 0x0000000040143000 0x0000000000000009
-[    0.015030] CRIT: [libkvmplat] <traps_arm64.c @  169> 	 x24 ~ x27: 0x0000000000000031 0x0000000040000000 0x000000004011b018 0x000000004013d000
-[    0.015243] CRIT: [libkvmplat] <traps_arm64.c @  172> 	 x28 ~ x29: 0x0000000000000000 0x0000000047ffff40
+### Assembly code
+
+Assembly code for `helloworld` compiled **with** scs suppport:
 
 ```
+Dump of assembler code for function main:
+   0x0000000040108590 <+0>:     str     x30, [x18], #8
+   0x0000000040108594 <+4>:     stp     x29, x30, [sp, #-48]!
+   0x0000000040108598 <+8>:     str     x21, [sp, #16]
+   0x000000004010859c <+12>:    stp     x20, x19, [sp, #32]
+   0x00000000401085a0 <+16>:    mov     x29, sp
+   0x00000000401085a4 <+20>:    mov     w20, w0
+=> 0x00000000401085a8 <+24>:    adrp    x0, 0x40119000
+   0x00000000401085ac <+28>:    add     x0, x0, #0x91f
+   0x00000000401085b0 <+32>:    mov     x19, x1
+   0x00000000401085b4 <+36>:    bl      0x4010e59c <printf>
+   0x00000000401085b8 <+40>:    adrp    x0, 0x40119000
+   0x00000000401085bc <+44>:    add     x0, x0, #0x92d
+   0x00000000401085c0 <+48>:    bl      0x4010e59c <printf>
+   0x00000000401085c4 <+52>:    cmp     w20, #0x1
+   0x00000000401085c8 <+56>:    b.lt    0x401085ec <main+92>  // b.tstop
+   0x00000000401085cc <+60>:    mov     w21, w20
+   0x00000000401085d0 <+64>:    adrp    x20, 0x40119000
+   0x00000000401085d4 <+68>:    add     x20, x20, #0x939
+   0x00000000401085d8 <+72>:    ldr     x1, [x19], #8
+   0x00000000401085dc <+76>:    mov     x0, x20
+   0x00000000401085e0 <+80>:    bl      0x4010e59c <printf>
+   0x00000000401085e4 <+84>:    subs    x21, x21, #0x1
+   0x00000000401085e8 <+88>:    b.ne    0x401085d8 <main+72>  // b.any
+   0x00000000401085ec <+92>:    adrp    x0, 0x40118000 <arch_timer_list>
+   0x00000000401085f0 <+96>:    add     x0, x0, #0xe4f
+   0x00000000401085f4 <+100>:   bl      0x4010e59c <printf>
+   0x00000000401085f8 <+104>:   ldp     x20, x19, [sp, #32]
+   0x00000000401085fc <+108>:   ldr     x21, [sp, #16]
+   0x0000000040108600 <+112>:   mov     w0, wzr
+   0x0000000040108604 <+116>:   ldp     x29, x30, [sp], #48
+   0x0000000040108608 <+120>:   ldr     x30, [x18, #-8]!
+   0x000000004010860c <+124>:   ret
+```
 
-After debugging using `gdb` (see how [here](https://gist.github.com/mariasfiraiala/34a7b5b41c4e5515c7f0ad8a2c220ef9)), I came to the conclusion that the problem arises from `unikraft/plat/kvm/arm/exceptions.S`.
+Assembly code for `helloworld` compiled **without** scs support:
+```
+Dump of assembler code for function main:
+   0x0000000040108590 <+0>:     stp     x29, x30, [sp, #-48]!
+   0x0000000040108594 <+4>:     str     x21, [sp, #16]
+   0x0000000040108598 <+8>:     stp     x20, x19, [sp, #32]
+   0x000000004010859c <+12>:    mov     x29, sp
+   0x00000000401085a0 <+16>:    mov     w20, w0
+=> 0x00000000401085a4 <+20>:    adrp    x0, 0x40119000
+   0x00000000401085a8 <+24>:    add     x0, x0, #0x91b
+   0x00000000401085ac <+28>:    mov     x19, x1
+   0x00000000401085b0 <+32>:    bl      0x4010e554 <printf>
+   0x00000000401085b4 <+36>:    adrp    x0, 0x40119000
+   0x00000000401085b8 <+40>:    add     x0, x0, #0x929
+   0x00000000401085bc <+44>:    bl      0x4010e554 <printf>
+   0x00000000401085c0 <+48>:    cmp     w20, #0x1
+   0x00000000401085c4 <+52>:    b.lt    0x401085e8 <main+88>  // b.tstop
+   0x00000000401085c8 <+56>:    mov     w21, w20
+   0x00000000401085cc <+60>:    adrp    x20, 0x40119000
+   0x00000000401085d0 <+64>:    add     x20, x20, #0x935
+   0x00000000401085d4 <+68>:    ldr     x1, [x19], #8
+   0x00000000401085d8 <+72>:    mov     x0, x20
+   0x00000000401085dc <+76>:    bl      0x4010e554 <printf>
+   0x00000000401085e0 <+80>:    subs    x21, x21, #0x1
+   0x00000000401085e4 <+84>:    b.ne    0x401085d4 <main+68>  // b.any
+   0x00000000401085e8 <+88>:    adrp    x0, 0x40118000 <arch_timer_list>
+   0x00000000401085ec <+92>:    add     x0, x0, #0xe4b
+   0x00000000401085f0 <+96>:    bl      0x4010e554 <printf>
+   0x00000000401085f4 <+100>:   ldp     x20, x19, [sp, #32]
+   0x00000000401085f8 <+104>:   ldr     x21, [sp, #16]
+   0x00000000401085fc <+108>:   mov     w0, wzr
+   0x0000000040108600 <+112>:   ldp     x29, x30, [sp], #48
+   0x0000000040108604 <+116>:   ret
+```
 
-Additional investigation using `gdb` revealed the fact that right before the last `printf("\n")` call from `main()`, `vsnprintf`  modifies the `x18` value, making it 0, so the trap that I get is due to the fact that in the function epilogue, `clang's` scs tries to dereference a NULL pointer.
+Notice how the prologue and epilogue have additional instructions for the code compiled with scs support.
 
-You'll find a snippet of the `gdb` investigation here:
+### `x18` Shadow Stack pointer using `gdb`
 
 ```
 main (argc=1, argv=0x4013c3d0 <ukplat_entry_argp.argv>)
-    at /home/maria/demo/02-hello-world-with-shadow-stack/apps/app-helloworld/main.c:35
-35      {
-(gdb) n
-40              printf("Hello world!\n");
-(gdb) p $x18
-$3 = 1207730200
-(gdb) n
-43              printf("Arguments: ");
-(gdb) p $x18
-$4 = 1207730200
-(gdb) n
-44              for (i=0; i<argc; ++i)
-(gdb) p $x18
-$5 = 1207730200
-(gdb) n
-45                      printf(" \"%s\"", argv[i]);
-(gdb) n
-44              for (i=0; i<argc; ++i)
-(gdb) p $x18
-$6 = 0
-(gdb) n
-46              printf("\n");
-(gdb) n
-61      }
-(gdb) n
-el1_sync ()
-    at /home/maria/demo/02-hello-world-with-shadow-stack/unikraft/plat/kvm/arm/exceptions.S:163
-163             ENTER_TRAP 1
-(gdb) n
-164             mov x0, sp
-(gdb) n
-165             mrs x1, far_el1
-(gdb) n
-166             bl trap_el1_sync
-(gdb) n
-[Inferior 1 (process 1) exited normally]
-
+    at /home/maria/demo/02-hello-world-with-shadow-stack/apps/app-helloworld/main.c:27
+27      {
+(gdb) x/i $pc
+=> 0x40108590 <main>:   str     x30, [x18], #8
+(gdb) si
+0x0000000040108594      27      {
+(gdb) x/i $pc
+=> 0x40108594 <main+4>: stp     x29, x30, [sp, #-48]!
+(gdb) x/x $x18
+0x47fc0018:     0x00000000
+(gdb) x/x $x30
+0x40113c78 <main_thread_func+380>:      0x7100001f
+(gdb) x/x 0x47fc0010
+0x47fc0010:     0x40113c78
 ```
 
-```
-Breakpoint 1, main (argc=1, argv=0x47ffff90)
-    at /home/maria/demo/02-hello-world-with-shadow-stack/apps/app-helloworld/main.c:40
-40              printf("Hello world!\n");
-(gdb) watch $x18
-Watchpoint 2: $x18
-(gdb) n
-43              printf("Arguments: ");
-(gdb) n
-44              for (i=0; i<argc; ++i)
-(gdb) n
-45                      printf(" \"%s\"", argv[i]);
-(gdb) n
+Notice how [`x18` - 8] stores pointer to `x30`, which at this point in time has the return address.
 
-Watchpoint 2: $x18
-
-Old value = 1207730200
-New value = 0
-0x000000004010d8c8 in vsnprintf (str=0x47fffae2 "guments: ", size=1022, fmt=0x40119943 "s\"", 
-    ap=...) at /home/maria/demo/02-hello-world-with-shadow-stack/unikraft/lib/nolibc/stdio.c:154
-154                     switch (ch = (unsigned char)*fmt++) {
-
-```
-
-Update: After removing the problematic part (the `helloworld` arguments print), everything seems to be working just fine. (duhhh)
-
-Question: Why does `vsnprintf` totally ignore the `-ffixed-x18 -fno-exceptions` flags? Do I have to explicitly reserve `x18` for every single function in Unikraft? 
-
+### Other observations
 
 (**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
 
