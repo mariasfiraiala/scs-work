@@ -1,7 +1,7 @@
-# Issues found while working with clang's scs support on Unikraft
+# Shadow Stack for Unikraft
 
 ## Additions
-1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft
+1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/3
 2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld/pull/2
 
 ## Proof of concept
