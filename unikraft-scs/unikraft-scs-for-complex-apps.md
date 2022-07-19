@@ -6,7 +6,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 |--------------|-----------|---------------|-------------|-----------------|----------------|-----------------|
 | SQLite | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
 | redis | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
-| nginx | :soon: | :soon: | :soon: | :soon: | :soon: | :soon: |
+| nginx | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
 
 `SQLite` with
 1. `gcc` on `x86`
@@ -106,4 +106,133 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     -8700988160769355826|8437480409959948743
     4777281798949903565|5443697212645358365
     sqlite> .exit
+    ```
+
+`nginx` with 
+1. `gcc` on `x86`
+    
+    * clone your dependencies:
+
+        1. [unikraft](https://github.com/unikraft/unikraft)
+        1. [nginx](https://github.com/unikraft/app-nginx)
+        1. [lib-nginx](https://github.com/unikraft/lib-nginx), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-lwip](https://github.com/unikraft/lib-lwip)
+
+    * the file hierarchy should look somethig like this:
+    ```
+    workdir
+    |---apps/
+    |      |---app-nginx/
+    |---libs/
+    |      |---lib-lwip/
+    |      |---lib-newlib/
+    |      |---lib-nginx/
+    |      |---lib-pthread-embedded/
+    |---unikraft/
+    ```
+
+    * create a `Makefile` in the `app-nginx` directory:
+    ```Makefile
+    UK_ROOT ?= $(PWD)/../../unikraft
+    UK_LIBS ?= $(PWD)/../../libs
+    LIBS := $(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-nginx
+
+    all:
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+
+    $(MAKECMDGOALS):
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+    ```
+
+    * create a `Makefile.uk` in the `app-sqlite` directory:
+    ```Makefile
+    $(eval $(call addlib,appnginx))
+    ```
+
+    * configure your app: `make menuconfig`
+        1. choose your usuals from `Architecture Selection`
+        1. choose your usuals from `Platform Configuration`
+        1. choose the `libnginx`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
+        1. in the `libnginx` library choose the `Provide main function` option
+        1. in the `lwip` library make sure to have `IPv4`, `UDP support`, `TCP support`, `ICMP support`, `DHCP support`, `Socket API` enabled
+        1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
+
+    * build your app: `make`
+
+    * use these commands to prepare running your app:
+    ```bash
+    $ sudo brctl addbr kraft0
+    $ sudo ip a a  172.44.0.1/24 dev kraft0
+    $ sudo ip l set dev kraft0 up
+    ```
+
+    * check your setup:
+    ```
+    $ ip a s kraft0
+    6: kraft0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+        link/ether 8a:08:a1:69:85:31 brd ff:ff:ff:ff:ff:ff
+        inet 172.44.0.1/24 scope global kraft0
+        valid_lft forever preferred_lft forever
+        inet6 fe80::8808:a1ff:fe69:8531/64 scope link 
+        valid_lft forever preferred_lft forever
+    ```
+
+    * run your app:
+    ```
+    sudo qemu-system-x86_64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
+                            -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                            -netdev bridge,id=en0,br=kraft0 \
+                            -device virtio-net-pci,netdev=en0 \
+                            -kernel "build/app-nginx_kvm-x86_64" \
+                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                            -cpu host \
+                            -enable-kvm \
+                            -nographic
+    ```
+
+    * if you're met with this error
+    ```
+    failed to parse default acl file `/etc/qemu/bridge.conf'
+    qemu-system-x86_64: bridge helper failed
+    ```
+    make sure to add this to your `/etc/qemu/bridge.conf` file; if it doesn't exist, create it
+    ```
+    allow br0
+    allow uk0
+    allow all
+    ```
+
+    * test your app: open a new terminal, or use `tmux` and give this command to retrive data from the server
+    ```bash
+    $ wget 172.44.0.2
+    --2021-08-18 16:47:38--  http://172.44.0.2/
+    --2022-07-19 21:17:17--  http://172.44.0.2/
+    Connecting to 172.44.0.2:80... connected.
+    HTTP request sent, awaiting response... 200 OK
+    Length: 180 [text/html]
+    Saving to: ‘index.html’
+
+    index.html                                         100%[===============================================================================================================>]     180  --.-KB/s    in 0s      
+
+    2022-07-19 21:17:17 (14,7 MB/s) - ‘index.html’ saved [180/180]
+    ```
+
+    ```bash
+    $ cat index.html 
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Hello, world!</title>
+    </head>
+    <body>
+    <h1>Hello, world!</h1>
+    <p>Powered by <a href="http://unikraft.org">Unikraft</a>.</p>
+    </body>
+    </html>
+    ```
+
+    * clean up your work:
+    ```
+    $ sudo ip l set dev kraft0 down
+    $ sudo brctl delbr kraft0
+
     ```
