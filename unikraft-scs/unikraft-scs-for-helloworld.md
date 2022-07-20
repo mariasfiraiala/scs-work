@@ -4,7 +4,7 @@
 1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/3
 2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld/pull/2
 
-## Proof of concept
+## Proof of Concept
 
 ### Assembly code
 
@@ -105,13 +105,55 @@ main (argc=1, argv=0x4013c3d0 <ukplat_entry_argp.argv>)
 
 Notice how [`x18` - 8] stores pointer to `x30`, which at this point in time has the return address.
 
-### Other observations
-
-(**Not so**) Fun fact: When called without the additions to ukboot, the constructor placed in `main.c` is completely ignored, however, when present in `ukboot` the constructor is called twice! Once for the bootstrapping process and once for the `main.c` instance.
-
 ## Setup
 
-Use [this gist](https://gist.github.com/mariasfiraiala/6e5d5ad67952c46b79cb12b9875a7241).
+### Files to modify for clang compilation
+
+```patch
+diff --git a/Makefile b/Makefile
+index e9f4044..b00796e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -616,6 +616,10 @@ CC_VERSION	:= $(shell $(CC) --version | \
+ CC_VER_MAJOR   := $(word 1,$(subst ., ,$(CC_VERSION)))
+ CC_VER_MINOR   := $(word 2,$(subst ., ,$(CC_VERSION)))
+ 
++CFLAGS          += --target=$(CONFIG_LLVM_TARGET_ARCH)
++ASFLAGS         += --target=$(CONFIG_LLVM_TARGET_ARCH)
++CXXFLAGS        += --target=$(CONFIG_LLVM_TARGET_ARCH)
++
+ ASFLAGS		+= -DCC_VERSION=$(CC_VERSION)
+ CFLAGS		+= -DCC_VERSION=$(CC_VERSION)
+ CXXFLAGS	+= -DCC_VERSION=$(CC_VERSION)
+diff --git a/plat/common/pci_ecam.c b/plat/common/pci_ecam.c
+index c884f11..7c069db 100644
+--- a/plat/common/pci_ecam.c
++++ b/plat/common/pci_ecam.c
+@@ -226,7 +226,7 @@ int gen_pci_irq_parse(const fdt32_t *addr, struct fdt_phandle_args *out_irq)
+ 	fdt32_t initial_match_array[16];
+ 	const fdt32_t *match_array = initial_match_array;
+ 	const fdt32_t *tmp, *imap, *imask;
+-	const fdt32_t dummy_imask[] = { [0 ... 16] = cpu_to_fdt32(~0) };
++	const fdt32_t dummy_imask[] = { 0 };
+ 	int intsize, newintsize;
+ 	int addrsize, newaddrsize = 0;
+ 	int imaplen, match, i, rc = -EINVAL;
+```
+
+### Extra steps for clang compilation
+
+Credits go to [michpappas](https://github.com/michpappas) for providing this facil workaround.
+
+* After modifying the files according to the aforementioned patch, build using
+```
+make CC=clang LD=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-gcc OBJCOPY=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-objcopy STRIP=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-strip
+```
+
+* You'll need the gcc cross-compiling toolchain installed. Get it from [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/downloads).
+
+* Also, make sure to have erratum options disabled when using `menuconfig` (`Architecture Selection` -> `Arm8 Compatible` -> `Workaround for [...] erratum`).
+
+* What's more, you'll have to configure the `Custom cross-compiler LLVM target` too (`Build Options` -> `Custom cross-compiler LLVM target`); just write `aarch64-none-elf` and you should be good to go.
 
 ## Critical documentation
 
