@@ -17,7 +17,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         1. [SQLite](https://github.com/unikraft/app-sqlite)
         1. [lib-sqlite](https://github.com/unikraft/lib-sqlite), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded)
 
-    * the file hierarchy should look somethig like this:
+    * the file hierarchy should look something like this:
     ```
     workdir
     |---apps/
@@ -108,6 +108,98 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     sqlite> .exit
     ```
 
+-------------------------------------------------------------------------------
+
+`redis` with
+1. `gcc` on `x86`
+
+    * clone your dependencies:
+
+        1. [unikraft](https://github.com/unikraft/unikraft)
+        1. [redis](https://github.com/unikraft/app-redis)
+        1. [lib-redis](https://github.com/unikraft/lib-redis), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-lwip](https://github.com/unikraft/lib-lwip)
+
+    * the file hierarchy should look something like this:
+    ```
+    workdir
+    |---apps/
+    |      |---app-redis/
+    |---libs/
+    |      |---lib-lwip/
+    |      |---lib-newlib/
+    |      |---lib-pthread-embedded/
+    |      |---lib-redis/
+    |---unikraft/
+    ```
+
+    * create a `Makefile` in the `app-redis` directory:
+    ```Makefile
+    UK_ROOT ?= $(PWD)/../../unikraft
+    UK_LIBS ?= $(PWD)/../../libs
+    LIBS := $(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-redis
+
+    all:
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+
+    $(MAKECMDGOALS):
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+    ```
+
+    * create a `Makefile.uk` in the `app-redis` directory:
+    ```Makefile
+    $(eval $(call addlib,appredis))
+    ```
+
+    * create an empty directory named `fs0` in the `app-redis` directory
+
+    * configure your app: `make menuconfig`
+        1. choose your usuals from `Architecture Selection`
+        1. choose your usuals from `Platform Configuration`
+        1. choose the `libnginx`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
+        1. in the `libredis` library choose the `Provide main function` option
+        1. in the `lwip` library make sure to have `IPv4`, `UDP support`, `TCP support`, `ICMP support`, `DHCP support`, `Socket API` enabled
+        1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
+
+    * build your app: `make`
+
+    * use these commands to prepare running your app:
+    ```bash
+    $ sudo brctl addbr kraft0
+    $ sudo ip a a  172.44.0.1/24 dev kraft0
+    $ sudo ip l set dev kraft0 up
+    ```
+
+    * check your setup:
+    ```
+    $ ip a s kraft0
+    6: kraft0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+        link/ether 8a:08:a1:69:85:31 brd ff:ff:ff:ff:ff:ff
+        inet 172.44.0.1/24 scope global kraft0
+        valid_lft forever preferred_lft forever
+        inet6 fe80::8808:a1ff:fe69:8531/64 scope link 
+        valid_lft forever preferred_lft forever
+    ```
+
+    * run your app:
+    ```
+    sudo qemu-system-x86_64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
+                            -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                            -netdev bridge,id=en0,br=kraft0 \
+                            -device virtio-net-pci,netdev=en0 \
+                            -kernel "build/app-redis_kvm-x86_64" \
+                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                            -cpu host \
+                            -enable-kvm \
+                            -nographic
+    ```
+
+    * clean up your work:
+    ```
+    $ sudo ip l set dev kraft0 down
+    $ sudo brctl delbr kraft0
+    ```
+-------------------------------------------------------------------------------
+
 `nginx` with 
 1. `gcc` on `x86`
     
@@ -117,7 +209,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         1. [nginx](https://github.com/unikraft/app-nginx)
         1. [lib-nginx](https://github.com/unikraft/lib-nginx), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-lwip](https://github.com/unikraft/lib-lwip)
 
-    * the file hierarchy should look somethig like this:
+    * the file hierarchy should look something like this:
     ```
     workdir
     |---apps/
@@ -143,7 +235,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
     ```
 
-    * create a `Makefile.uk` in the `app-sqlite` directory:
+    * create a `Makefile.uk` in the `app-nginx` directory:
     ```Makefile
     $(eval $(call addlib,appnginx))
     ```
@@ -234,5 +326,4 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     ```
     $ sudo ip l set dev kraft0 down
     $ sudo brctl delbr kraft0
-
     ```
