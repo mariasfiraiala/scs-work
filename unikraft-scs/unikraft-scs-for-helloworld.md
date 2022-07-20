@@ -1,8 +1,8 @@
 # Shadow Stack for Unikraft's `helloworld`
 
 ## Additions
-1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft/pull/3
-2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld/pull/2
+1. to unikraft/unikraft : https://github.com/mariasfiraiala/unikraft
+2. to unikraft/app-helloworld: https://github.com/mariasfiraiala/app-helloworld
 
 ## Proof of Concept
 
