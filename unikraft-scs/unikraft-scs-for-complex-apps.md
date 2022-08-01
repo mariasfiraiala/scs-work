@@ -5,7 +5,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 | App\Compiler | gcc - x86 | gcc - aarch64 | clang - x86 | clang - aarch64 | clang with scs | gcc-12 with scs |
 |--------------|-----------|---------------|-------------|-----------------|----------------|-----------------|
 | SQLite | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
-| redis | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
+| redis | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
 | nginx | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
 
 `SQLite` with
@@ -36,10 +36,10 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     LIBS := $(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-sqlite
 
     all:
-        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
 
     $(MAKECMDGOALS):
-        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
     ```
 
     * create a `Makefile.uk` in the `app-sqlite` directory:
@@ -75,10 +75,10 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     * run your app:
     ```bash
     sudo qemu-system-x86_64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
-                        -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
-                        -kernel "build/app-sqlite_kvm-x86_64" \
-                        -enable-kvm \
-                        -nographic
+                            -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                            -kernel "build/app-sqlite_kvm-x86_64" \
+                            -enable-kvm \
+                            -nographic
     ```
     * test your app:
     ```   
@@ -136,13 +136,13 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     ```Makefile
     UK_ROOT ?= $(PWD)/../../unikraft
     UK_LIBS ?= $(PWD)/../../libs
-    LIBS := $(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-redis
+    LIBS := $(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-redis
 
     all:
-        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
 
     $(MAKECMDGOALS):
-        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
     ```
 
     * create a `Makefile.uk` in the `app-redis` directory:
@@ -155,7 +155,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     * configure your app: `make menuconfig`
         1. choose your usuals from `Architecture Selection`
         1. choose your usuals from `Platform Configuration`
-        1. choose the `libnginx`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
+        1. choose the `libredis`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
         1. in the `libredis` library choose the `Provide main function` option
         1. in the `lwip` library make sure to have `IPv4`, `UDP support`, `TCP support`, `ICMP support`, `DHCP support`, `Socket API` enabled
         1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
@@ -191,6 +191,109 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
                             -cpu host \
                             -enable-kvm \
                             -nographic
+    ```
+
+    * clean up your work:
+    ```
+    $ sudo ip l set dev kraft0 down
+    $ sudo brctl delbr kraft0
+    ```
+
+2. `gcc` on `AArch64`
+
+    * clone your dependencies:
+
+        1. [unikraft](https://github.com/unikraft/unikraft)
+        1. [redis](https://github.com/unikraft/app-redis)
+        1. [lib-redis](https://github.com/unikraft/lib-redis), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-lwip](https://github.com/unikraft/lib-lwip)
+
+    * the file hierarchy should look something like this:
+    ```
+    workdir
+    |---apps/
+    |      |---app-redis/
+    |---libs/
+    |      |---lib-lwip/
+    |      |---lib-newlib/
+    |      |---lib-pthread-embedded/
+    |      |---lib-redis/
+    |---unikraft/
+    ```
+
+    * modify `libs/lib-newlib/include/limits.h` by adding `defined(__ARM_64__)` like so
+    ```C
+    #if defined(__x86_64__) || defined(__ARM_64__)
+    # define LONG_MAX       0x7fffffffffffffffL
+    # define ULONG_MAX      0xffffffffffffffffUL
+    #else
+    # define LONG_MAX       0x7fffffffL
+    # define ULONG_MAX      0xffffffffUL
+    #endif
+    #define LONG_MIN        (-LONG_MAX-1L)
+    #define LLONG_MAX       0x7fffffffffffffffLL
+    #define LLONG_MIN       (-LLONG_MAX-1LL)
+    #define ULLONG_MAX      0xffffffffffffffffULL
+    ```
+
+    * create a `Makefile` in the `app-redis` directory:
+    ```Makefile
+    UK_ROOT ?= $(PWD)/../../unikraft
+    UK_LIBS ?= $(PWD)/../../libs
+    LIBS := $(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-redis
+
+    all:
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+
+    $(MAKECMDGOALS):
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+    ```
+
+    * create a `Makefile.uk` in the `app-redis` directory:
+    ```Makefile
+    $(eval $(call addlib,appredis))
+    ```
+
+    * create an empty directory named `fs0` in the `app-redis` directory
+
+    * configure your app: `make menuconfig`
+        1. choose your usuals from `Architecture Selection`
+        1. choose your usuals from `Platform Configuration`
+        1. choose the `libredis`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
+        1. in the `libredis` library choose the `Provide main function` option
+        1. in the `lwip` library make sure to have `IPv4`, `UDP support`, `TCP support`, `ICMP support`, `DHCP support`, `Socket API` enabled
+        1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
+
+    * build your app: `make`
+
+    * use these commands to prepare running your app:
+    ```bash
+    $ sudo brctl addbr kraft0
+    $ sudo ip a a  172.44.0.1/24 dev kraft0
+    $ sudo ip l set dev kraft0 up
+    ```
+
+    * check your setup:
+    ```
+    $ ip a s kraft0
+    6: kraft0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+        link/ether 8a:08:a1:69:85:31 brd ff:ff:ff:ff:ff:ff
+        inet 172.44.0.1/24 scope global kraft0
+        valid_lft forever preferred_lft forever
+        inet6 fe80::8808:a1ff:fe69:8531/64 scope link 
+        valid_lft forever preferred_lft forever
+    ```
+
+    * run your app:
+    ```
+    sudo qemu-system-aarch64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
+                             -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                             -netdev bridge,id=en0,br=kraft0 \
+                             -device virtio-net-pci,netdev=en0 \
+                             -kernel "build/app-redis_kvm-arm64" \
+                             -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                             -machine virt \
+                             -cpu cortex-a57 \
+                             -nographic
     ```
 
     * clean up your work:
