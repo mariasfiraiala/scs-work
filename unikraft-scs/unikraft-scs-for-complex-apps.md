@@ -253,7 +253,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $(eval $(call addlib,appredis))
     ```
 
-    * create an empty directory named `fs0` in the `app-redis` directory
+    * create a directory named `fs0` in the `app-redis` directory, dowload [this file](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis.conf) and move it there
 
     * configure your app: `make menuconfig`
         1. choose your usuals from `Architecture Selection`
@@ -290,10 +290,32 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
                              -netdev bridge,id=en0,br=kraft0 \
                              -device virtio-net-pci,netdev=en0 \
                              -kernel "build/app-redis_kvm-arm64" \
-                             -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                             -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 -- /redis.conf" \
                              -machine virt \
                              -cpu cortex-a57 \
                              -nographic
+    ```
+
+    * in order to be able to make `redis` accept requests you'll have to modify `lib-newlib/include/fcntl.h` as it follows:
+    ```C
+    [...]
+    #elif ((defined CONFIG_ARCH_ARM_64) || (defined CONFIG_ARCH_ARM_32))
+    // redefine FNONBLOCK as well
+    #undef FNONBLOCK
+    #define FNONBLOCK 04000
+
+    // redefine O_NONBLOCK
+    #undef O_NONBLOCK
+    #define O_NONBLOCK  FNONBLOCK
+    [...]
+    ```
+
+    * test your app: download [this executable](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis-cli) and run it using this command:
+    ```
+    $./redis-cli -h 172.44.0.2 -p 6379
+    172.44.0.2:6379> PING
+    PONG
+    172.44.0.2:6379> exit
     ```
 
     * clean up your work:
