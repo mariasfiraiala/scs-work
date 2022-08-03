@@ -6,7 +6,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 |--------------|-----------|---------------|-------------|-----------------|----------------|-----------------|
 | SQLite | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
 | redis | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
-| nginx | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: | :soon: |
+| nginx | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
 
 `SQLite` with
 1. `gcc` on `x86`
@@ -525,6 +525,143 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     allow br0
     allow uk0
     allow all
+    ```
+
+    * test your app: open a new terminal, or use `tmux` and give this command to retrive data from the server
+    ```bash
+    $ wget 172.44.0.2
+    --2021-08-18 16:47:38--  http://172.44.0.2/
+    --2022-07-19 21:17:17--  http://172.44.0.2/
+    Connecting to 172.44.0.2:80... connected.
+    HTTP request sent, awaiting response... 200 OK
+    Length: 180 [text/html]
+    Saving to: ‘index.html’
+
+    index.html                                         100%[===============================================================================================================>]     180  --.-KB/s    in 0s      
+
+    2022-07-19 21:17:17 (14,7 MB/s) - ‘index.html’ saved [180/180]
+    ```
+
+    ```bash
+    $ cat index.html 
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Hello, world!</title>
+    </head>
+    <body>
+    <h1>Hello, world!</h1>
+    <p>Powered by <a href="http://unikraft.org">Unikraft</a>.</p>
+    </body>
+    </html>
+    ```
+
+    * clean up your work:
+    ```
+    $ sudo ip l set dev kraft0 down
+    $ sudo brctl delbr kraft0
+    ```
+
+2. `gcc` on `AArch64`
+
+    * clone your dependencies:
+
+        1. [unikraft](https://github.com/unikraft/unikraft)
+        1. [nginx](https://github.com/unikraft/app-nginx)
+        1. [lib-nginx](https://github.com/unikraft/lib-nginx), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-lwip](https://github.com/unikraft/lib-lwip)
+
+    * the file hierarchy should look something like this:
+    ```
+    workdir
+    |---apps/
+    |      |---app-nginx/
+    |---libs/
+    |      |---lib-lwip/
+    |      |---lib-newlib/
+    |      |---lib-nginx/
+    |      |---lib-pthread-embedded/
+    |---unikraft/
+    ```
+
+    * modify `libs/lib-newlib/include/limits.h` by adding `defined(__ARM_64__)` like so
+    ```C
+    #if defined(__x86_64__) || defined(__ARM_64__)
+    # define LONG_MAX       0x7fffffffffffffffL
+    # define ULONG_MAX      0xffffffffffffffffUL
+    #else
+    # define LONG_MAX       0x7fffffffL
+    # define ULONG_MAX      0xffffffffUL
+    #endif
+    #define LONG_MIN        (-LONG_MAX-1L)
+    #define LLONG_MAX       0x7fffffffffffffffLL
+    #define LLONG_MIN       (-LLONG_MAX-1LL)
+    #define ULLONG_MAX      0xffffffffffffffffULL
+    ```
+
+    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
+    ```C
+    static __uk_tls struct passwd_entry
+    [...]
+    static __uk_tls struct group_entry
+    ```
+
+    * create a `Makefile` in the `app-nginx` directory:
+    ```Makefile
+    UK_ROOT ?= $(PWD)/../../unikraft
+    UK_LIBS ?= $(PWD)/../../libs
+    LIBS := $(UK_LIBS)/lib-lwip:$(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-nginx
+
+    all:
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+
+    $(MAKECMDGOALS):
+        @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+    ```
+
+    * create a `Makefile.uk` in the `app-nginx` directory:
+    ```Makefile
+    $(eval $(call addlib,appnginx))
+    ```
+
+    * configure your app: `make menuconfig`
+        1. choose your usuals from `Architecture Selection`
+        1. choose your usuals from `Platform Configuration`
+        1. choose the `libnginx`, `lwip`, `libnewlib`, `libpthread-embedded` libraries from `Library Configuration`
+        1. in the `libnginx` library choose the `Provide main function` option
+        1. in the `lwip` library make sure to have `IPv4`, `UDP support`, `TCP support`, `ICMP support`, `DHCP support`, `Socket API` enabled
+        1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
+
+    * build your app: `make`
+
+    * use these commands to prepare running your app:
+    ```bash
+    $ sudo brctl addbr kraft0
+    $ sudo ip a a  172.44.0.1/24 dev kraft0
+    $ sudo ip l set dev kraft0 up
+    ```
+
+    * check your setup:
+    ```
+    $ ip a s kraft0
+    6: kraft0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+        link/ether 8a:08:a1:69:85:31 brd ff:ff:ff:ff:ff:ff
+        inet 172.44.0.1/24 scope global kraft0
+        valid_lft forever preferred_lft forever
+        inet6 fe80::8808:a1ff:fe69:8531/64 scope link 
+        valid_lft forever preferred_lft forever
+    ```
+
+    * run your app:
+    ```
+    sudo qemu-system-aarch64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
+                            -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                            -netdev bridge,id=en0,br=kraft0 \
+                            -device virtio-net-pci,netdev=en0 \
+                            -kernel "build/app-nginx_kvm-arm64" \
+                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                            -machine virt \
+                            -cpu cortex-a57 \
+                            -nographic
     ```
 
     * test your app: open a new terminal, or use `tmux` and give this command to retrive data from the server
