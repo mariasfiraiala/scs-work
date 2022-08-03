@@ -36,24 +36,38 @@ This blog provides an aproximative plan for the final 6 weeks of GSoC, together 
 
 * Prepare configuration parameters for Shadow Stack which will be used for the `make build system`.
 
+* Start optimizing, take as reference previous work done for [Android](https://android-review.googlesource.com/c/kernel/common/+/694163).
+
 ## Week 10: 22 - 28 Aug
 
-* Test overhead: use `uktest`.
+* Test overhead: use `uktest`(optional).
 
-* Start optimizing, take as a reference previous work done for [Android](https://android-review.googlesource.com/c/kernel/common/+/694163).
+* Finalize optimization work.
 
 * Take advice from Vlad.
 
-## Week 11: 29 Aug - 4 Sept
+* Prepare upstreaming the product.
 
-* Finalize optimization work.
+## Week 11: 29 Aug - 4 Sept
 
 * Test overhead and behaviour on complex apps: `SQLite`, `redis`, `nginx`.
 
 * Provide the final PR.
 
-## Week 12: 5 sept - 11 Sept
+## Week 12: 5 - 11 Sept
 
 * Feedback week: make everythig pretty.
 
 * Integrate (if needed) all feedback on the provided PR into the final version of the project.
+
+## Extra work
+(must be done in order to make sure Shadow Stack support is widely accessible on Unikraft)
+
+* Create issues and PRs for every encountered error:
+
+1. `newlib` compilation issue for `AArch64`: modify `newlib/include/limits.h`
+1. `newlib` issue for accepting requests on `redis`: modify `newlib/include/fcntl.h`
+1. `virtio` issue: modify `unikraft/plat/drivers/virtio/virtio_pci.c`
+1. `TLS` issue: modify `unikraft/lib/posix-user/user.c`
+
+* Test other complex apps on `AArch64`: `python3`, `lua`.
