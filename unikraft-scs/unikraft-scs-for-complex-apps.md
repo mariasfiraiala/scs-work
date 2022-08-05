@@ -129,6 +129,21 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     |---unikraft/
     ```
 
+    * modify `libs/lib-newlib/include/limits.h` by adding `defined(__ARM_64__)` like so
+    ```C
+    #if defined(__x86_64__) || defined(__ARM_64__)
+    # define LONG_MAX       0x7fffffffffffffffL
+    # define ULONG_MAX      0xffffffffffffffffUL
+    #else
+    # define LONG_MAX       0x7fffffffL
+    # define ULONG_MAX      0xffffffffUL
+    #endif
+    #define LONG_MIN        (-LONG_MAX-1L)
+    #define LLONG_MAX       0x7fffffffffffffffLL
+    #define LLONG_MIN       (-LLONG_MAX-1LL)
+    #define ULLONG_MAX      0xffffffffffffffffULL
+    ```
+
     * create a `Makefile` in the `app-sqlite` directory:
     ```Makefile
     UK_ROOT ?= $(PWD)/../../unikraft
@@ -259,7 +274,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $(eval $(call addlib,appredis))
     ```
 
-    * create an empty directory named `fs0` in the `app-redis` directory
+    * create a directory named `fs0` in the `app-redis` directory, download [this file](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis.conf) and move it there
 
     * configure your app: `make menuconfig`
         1. choose your usuals from `Architecture Selection`
@@ -296,7 +311,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
                             -netdev bridge,id=en0,br=kraft0 \
                             -device virtio-net-pci,netdev=en0 \
                             -kernel "build/app-redis_kvm-x86_64" \
-                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 -- /redis.conf" \
                             -cpu host \
                             -enable-kvm \
                             -nographic
@@ -362,7 +377,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $(eval $(call addlib,appredis))
     ```
 
-    * create a directory named `fs0` in the `app-redis` directory, dowload [this file](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis.conf) and move it there
+    * create a directory named `fs0` in the `app-redis` directory, download [this file](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis.conf) and move it there
 
     * configure your app: `make menuconfig`
         1. choose your usuals from `Architecture Selection`
@@ -654,14 +669,14 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     * run your app:
     ```
     sudo qemu-system-aarch64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
-                            -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
-                            -netdev bridge,id=en0,br=kraft0 \
-                            -device virtio-net-pci,netdev=en0 \
-                            -kernel "build/app-nginx_kvm-arm64" \
-                            -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
-                            -machine virt \
-                            -cpu cortex-a57 \
-                            -nographic
+                             -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                             -netdev bridge,id=en0,br=kraft0 \
+                             -device virtio-net-pci,netdev=en0 \
+                             -kernel "build/app-nginx_kvm-arm64" \
+                             -append "netdev.ipv4_addr=172.44.0.2 netdev.ipv4_gw_addr=172.44.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --" \
+                             -machine virt \
+                             -cpu cortex-a57 \
+                             -nographic
     ```
 
     * test your app: open a new terminal, or use `tmux` and give this command to retrive data from the server
