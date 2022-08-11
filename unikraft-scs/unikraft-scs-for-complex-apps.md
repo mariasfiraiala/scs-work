@@ -4,7 +4,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
 | App\Compiler | gcc - x86 | gcc - aarch64 | clang - x86 | clang - aarch64 | clang with scs | gcc-12 with scs |
 |--------------|-----------|---------------|-------------|-----------------|----------------|-----------------|
-| SQLite | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
+| SQLite | :heavy_check_mark: | :heavy_check_mark: | :soon: | :heavy_check_mark: | :soon: | :soon: |
 | redis | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
 | nginx | :heavy_check_mark: | :heavy_check_mark: | :soon: | :soon: | :soon: | :soon: |
 
@@ -57,7 +57,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
     * create a directory named `fs0` in your `app-sqlite` directory
 
-    * inside it create this `scrip.sql` script:
+    * inside it create this `script.sql` script:
     ```sql
     CREATE TABLE tab (d1 int, d2 text);
     INSERT INTO tab VALUES (random(), cast(random() as text)),
@@ -179,7 +179,171 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
     * create a directory named `fs0` in your `app-sqlite` directory
 
-    * inside it create this `scrip.sql` script:
+    * inside it create this `script.sql` script:
+    ```sql
+    CREATE TABLE tab (d1 int, d2 text);
+    INSERT INTO tab VALUES (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text)),
+    (random(), cast(random() as text));    
+    ```
+
+    * run your app:
+    ```bash
+    sudo qemu-system-aarch64 -fsdev local,id=myid,path=$(pwd)/fs0,security_model=none \
+                             -device virtio-9p-pci,fsdev=myid,mount_tag=rootfs,disable-modern=on,disable-legacy=off \
+                             -kernel "build/app-sqlite_kvm-arm64" \
+                             -machine virt \
+                             -cpu cortex-a57 \
+                             -nographic
+    ```
+
+    * test your app:
+    ```
+    Powered by
+    o.   .o       _ _               __ _
+    Oo   Oo  ___ (_) | __ __  __ _ ' _) :_
+    oO   oO ' _ `| | |/ /  _)' _` | |_|  _)
+    oOo oOO| | | | |   (| | | (_) |  _) :_
+    OoOoO ._, ._:_:_,\_._,  .__,_:_, \___)
+            Hyperion 0.9.0~a10a19b-custom
+    SQLite version 3.30.1 2019-10-10 20:19:45
+    Enter ".help" for usage hints.
+    Connected to a transient in-memory database.
+    Use ".open FILENAME" to reopen on a persistent database.
+    sqlite> .read script.sql
+    sqlite> select * from tab;
+    1110980029405251417|4790364924879920278
+    1139113440994134737|1770109440632367248
+    -431795700753794536|2260207729281847092
+    1203125865995321955|-6480314585029203527
+    602727467839614662|7985152841375895325
+    -4375719181948920944|-8601960380790611479
+    5769441887793396766|6690185065200255103
+    3505855085187169777|-3449770537330452658
+    7295426976800648951|-7727476964388433668
+    2408680503256646790|-4737393212733069271
+    sqlite> .exit
+    ```
+
+4. `clang` on `AArch64`
+
+    * clone your dependencies:
+
+        1. [unikraft](https://github.com/unikraft/unikraft)
+        1. [SQLite](https://github.com/unikraft/app-sqlite)
+        1. [lib-sqlite](https://github.com/unikraft/lib-sqlite), [lib-newlib](https://github.com/unikraft/lib-newlib), [lib-pthread-embedded](https://github.com/unikraft/lib-pthread-embedded)
+
+    * the file hierarchy should look something like this:
+    ```
+    workdir
+    |---apps/
+    |      |---app-sqlite/
+    |---libs/
+    |      |---lib-newlib/
+    |      |---lib-pthread-embedded/
+    |      |---lib-sqlite/
+    |---unikraft/
+    ```
+
+    * modify `libs/lib-newlib/include/limits.h` by adding `defined(__ARM_64__)` like so
+    ```C
+    #if defined(__x86_64__) || defined(__ARM_64__)
+    # define LONG_MAX       0x7fffffffffffffffL
+    # define ULONG_MAX      0xffffffffffffffffUL
+    #else
+    # define LONG_MAX       0x7fffffffL
+    # define ULONG_MAX      0xffffffffUL
+    #endif
+    #define LONG_MIN        (-LONG_MAX-1L)
+    #define LLONG_MAX       0x7fffffffffffffffLL
+    #define LLONG_MIN       (-LLONG_MAX-1LL)
+    #define ULLONG_MAX      0xffffffffffffffffULL
+    ```
+
+    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
+    ```C
+    static __uk_tls struct passwd_entry
+    [...]
+    static __uk_tls struct group_entry
+    ```
+
+    * modify these files as it follows:
+    ```patch
+    diff --git a/Makefile b/Makefile
+    index e9f4044..b00796e 100644
+    --- a/Makefile
+    +++ b/Makefile
+    @@ -616,6 +616,10 @@ CC_VERSION	:= $(shell $(CC) --version | \
+    CC_VER_MAJOR   := $(word 1,$(subst ., ,$(CC_VERSION)))
+    CC_VER_MINOR   := $(word 2,$(subst ., ,$(CC_VERSION)))
+    
+    +CFLAGS          += --target=$(CONFIG_LLVM_TARGET_ARCH)
+    +ASFLAGS         += --target=$(CONFIG_LLVM_TARGET_ARCH)
+    +CXXFLAGS        += --target=$(CONFIG_LLVM_TARGET_ARCH)
+    +
+    ASFLAGS		+= -DCC_VERSION=$(CC_VERSION)
+    CFLAGS		+= -DCC_VERSION=$(CC_VERSION)
+    CXXFLAGS	+= -DCC_VERSION=$(CC_VERSION)
+    diff --git a/plat/common/pci_ecam.c b/plat/common/pci_ecam.c
+    index c884f11..7c069db 100644
+    --- a/plat/common/pci_ecam.c
+    +++ b/plat/common/pci_ecam.c
+    @@ -226,7 +226,7 @@ int gen_pci_irq_parse(const fdt32_t *addr, struct fdt_phandle_args *out_irq)
+        fdt32_t initial_match_array[16];
+        const fdt32_t *match_array = initial_match_array;
+        const fdt32_t *tmp, *imap, *imask;
+    -	const fdt32_t dummy_imask[] = { [0 ... 16] = cpu_to_fdt32(~0) };
+    +	const fdt32_t dummy_imask[] = { 0 };
+        int intsize, newintsize;
+        int addrsize, newaddrsize = 0;
+        int imaplen, match, i, rc = -EINVAL;
+    ```
+
+    * create a `Makefile` in the `app-sqlite` directory:
+    ```Makefile
+    UK_ROOT ?= $(PWD)/../../unikraft
+    UK_LIBS ?= $(PWD)/../../libs
+    LIBS := $(UK_LIBS)/lib-pthread-embedded:$(UK_LIBS)/lib-newlib:$(UK_LIBS)/lib-sqlite
+
+    all:
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS)
+
+    $(MAKECMDGOALS):
+	    @$(MAKE) -C $(UK_ROOT) A=$(PWD) L=$(LIBS) $(MAKECMDGOALS)
+    ```
+
+    * create a `Makefile.uk` in the `app-sqlite` directory:
+    ```Makefile
+    $(eval $(call addlib,appsqlite))
+    ```
+
+    * configure your app: `make menuconfig`
+        1. choose your usuals from `Architecture Selection`
+        1. disable all erratum options from `Architecture Selection` -> `Arm8 Compatible` -> `Workaround for [...] erratum`
+        1. choose all `Virtio` options from `Platform configuration`->`KVM guest`->`Virtio`
+        1. choose the `SQLite`, `vfscore` libraries
+        1. from the `vfscore` library,choose the `Default root filesystem` to be `9pfs`
+        1. configure the `Custom cross-compiler LLVM target` from `Build Options` -> `Custom cross-compiler LLVM target`; write `aarch64-none-elf`
+
+    * get your cross-compiling toolchain from [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/downloads)
+
+    * build your app: 
+    ```
+    make CC=clang LD=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-gcc OBJCOPY=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-objcopy STRIP=~/toolchains/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-strip
+    ```
+
+    * fix `gcc`-isms errors using [this link](https://sourceware.org/pipermail/glibc-cvs/2021q3/074785.html)
+
+    * create a directory named `fs0` in your `app-sqlite` directory
+
+    * inside it create this `script.sql` script:
     ```sql
     CREATE TABLE tab (d1 int, d2 text);
     INSERT INTO tab VALUES (random(), cast(random() as text)),
