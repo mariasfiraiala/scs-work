@@ -877,3 +877,13 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $ sudo ip l set dev kraft0 down
     $ sudo brctl delbr kraft0
     ```
+
+## Compile with `gcc-12` on `AArch64`
+
+(this isn't completely correct, as we are using the linux toolchain, not the baremetal one, however it works)
+
+Add this to `unikraft/arch/arm/arm64/Makefile.uk`:
+
+```
+ARCHFLAGS-$(call gcc_version_ge, 10, 0)     += -mno-outline-atomics
+```
