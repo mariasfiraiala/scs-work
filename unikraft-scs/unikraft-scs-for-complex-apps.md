@@ -300,10 +300,31 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         const fdt32_t *match_array = initial_match_array;
         const fdt32_t *tmp, *imap, *imask;
     -	const fdt32_t dummy_imask[] = { [0 ... 16] = cpu_to_fdt32(~0) };
-    +	const fdt32_t dummy_imask[] = { 0 };
+    +	const fdt32_t dummy_imask[] = {cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0),
+    +				                   cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0),
+    +				                   cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0),
+    +				                   cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0), cpu_to_fdt32(~0)};
         int intsize, newintsize;
         int addrsize, newaddrsize = 0;
         int imaplen, match, i, rc = -EINVAL;
+    ```
+
+    * to be able to run with `clang`, modify `unikraft/plat/drivers/virtio/virtio_pci.c`:
+    ```patch
+    @@ -273,10 +273,12 @@ static int vpci_legacy_pci_config_get(struct virtio_dev *vdev, __u16 offset,
+                    VIRTIO_PCI_CONFIG_OFF + offset, buf, len,
+                    type_len);
+        } else {
+    +		__u32 buf_len_bytes = len * type_len;
+    +
+            rc = virtio_cread_bytes_many(
+                    (void *) (unsigned long)vpdev->pci_base_addr,
+    -				VIRTIO_PCI_CONFIG_OFF + offset,	buf, len);
+    -		if (rc != (int)len)
+    +				VIRTIO_PCI_CONFIG_OFF + offset,	buf, buf_len_bytes);
+    +		if (rc != (int)(buf_len_bytes))
+                return -EFAULT;
+        }
     ```
 
     * create a `Makefile` in the `app-sqlite` directory:
@@ -683,7 +704,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         int imaplen, match, i, rc = -EINVAL;
     ```
 
-    * to be able to run with `clang`, modify `unikraft/plat/drivers/virtio/virtio_pci.c`
+    * to be able to run with `clang`, modify `unikraft/plat/drivers/virtio/virtio_pci.c`:
     ```patch
     @@ -273,10 +273,12 @@ static int vpci_legacy_pci_config_get(struct virtio_dev *vdev, __u16 offset,
                     VIRTIO_PCI_CONFIG_OFF + offset, buf, len,
@@ -1143,7 +1164,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
         int imaplen, match, i, rc = -EINVAL;
     ```
 
-    * to be able to run with `clang`, modify `unikraft/plat/drivers/virtio/virtio_pci.c`
+    * to be able to run with `clang`, modify `unikraft/plat/drivers/virtio/virtio_pci.c`:
     ```patch
     @@ -273,10 +273,12 @@ static int vpci_legacy_pci_config_get(struct virtio_dev *vdev, __u16 offset,
                     VIRTIO_PCI_CONFIG_OFF + offset, buf, len,
@@ -1276,7 +1297,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 ARCHFLAGS-$(call gcc_version_ge, 10, 0)     += -mno-outline-atomics
 ```
 
-* you might need to also modify `unikraft/plat/drivers/virtio/virtio_pci.c`
+* you might need to also modify `unikraft/plat/drivers/virtio/virtio_pci.c`:
 ```patch
 @@ -273,10 +273,12 @@ static int vpci_legacy_pci_config_get(struct virtio_dev *vdev, __u16 offset,
                 VIRTIO_PCI_CONFIG_OFF + offset, buf, len,
