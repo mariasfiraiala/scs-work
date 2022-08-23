@@ -232,7 +232,19 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     sqlite> .exit
     ```
 
-3. `clang` on `AArch64`
+3. `clang` on `x86`
+
+    * Follow the same steps as for the compilation with `gcc` on `x86`, but build your application using:
+    ```
+    make CC=clang
+    ```
+
+    * Add these flags to `unikraft/Makefile.uk`:
+    ```
+    ASFLAGS-$(call have_clang)     += -mllvm -asm-macro-max-nesting-depth=1000
+    ```
+
+4. `clang` on `AArch64`
 
     * clone your dependencies:
 
@@ -633,7 +645,19 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $ sudo brctl delbr kraft0
     ```
 
-3. `clang` on `AArch64`
+3. `clang` on `x86`
+
+    * Follow the same steps as for the compilation with `gcc` on `x86`, but build your application using:
+    ```
+    make CC=clang
+    ```
+
+    * Add these flags to `unikraft/Makefile.uk`:
+    ```
+    ASFLAGS-$(call have_clang)     += -mllvm -asm-macro-max-nesting-depth=1000
+    ```
+
+4. `clang` on `AArch64`
 
     * clone your dependencies:
 
@@ -1086,7 +1110,26 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $ sudo brctl delbr kraft0
     ```
 
-3. `clang` on `AArch64`
+3. `clang` on `x86`
+
+    * Follow the same steps as for the compilation with `gcc` on `x86`, but build your application using:
+    ```
+    make CC=clang
+    ```
+
+    * Add these flags to `unikraft/Makefile.uk`:
+    ```
+    ASFLAGS-$(call have_clang)     += -mllvm -asm-macro-max-nesting-depth=1000
+    ```
+
+    * From `libs/lib-nginx/Makefile.uk` delete the `-Wno-unused-but-set-variable` as it follows:
+    ```Makefile
+    # Suppress some warnings to make the build process look neater
+    LIBNGINX_FLAGS_SUPPRESS = -Wno-unused-parameter -Wno-unused-variable	\
+    -Wno-unused-value
+    ```
+
+4. `clang` on `AArch64`
 
     * clone your dependencies:
 
