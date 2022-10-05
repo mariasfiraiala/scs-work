@@ -162,13 +162,6 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     $(eval $(call addlib,appsqlite))
     ```
 
-    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
-    ```C
-    static __uk_tls struct passwd_entry
-    [...]
-    static __uk_tls struct group_entry
-    ```
-
     * configure your app: `make menuconfig`
         1. choose your usuals from `Architecture Selection`
         1. choose all `Virtio` options from `Platform configuration`->`KVM guest`->`Virtio`
@@ -277,13 +270,6 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     #define LLONG_MAX       0x7fffffffffffffffLL
     #define LLONG_MIN       (-LLONG_MAX-1LL)
     #define ULLONG_MAX      0xffffffffffffffffULL
-    ```
-
-    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
-    ```C
-    static __uk_tls struct passwd_entry
-    [...]
-    static __uk_tls struct group_entry
     ```
 
     * modify these files as it follows:
@@ -512,6 +498,14 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
                             -cpu host \
                             -enable-kvm \
                             -nographic
+    ```
+
+    * test your app: download [this executable](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis-cli) and run it using this command:
+    ```
+    $./redis-cli -h 172.44.0.2 -p 6379
+    172.44.0.2:6379> PING
+    PONG
+    172.44.0.2:6379> exit
     ```
 
     * clean up your work:
@@ -1009,13 +1003,6 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     #define ULLONG_MAX      0xffffffffffffffffULL
     ```
 
-    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
-    ```C
-    static __uk_tls struct passwd_entry
-    [...]
-    static __uk_tls struct group_entry
-    ```
-
     * create a `Makefile` in the `app-nginx` directory:
     ```Makefile
     UK_ROOT ?= $(PWD)/../../unikraft
@@ -1163,13 +1150,6 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
     #define LLONG_MAX       0x7fffffffffffffffLL
     #define LLONG_MIN       (-LLONG_MAX-1LL)
     #define ULLONG_MAX      0xffffffffffffffffULL
-    ```
-
-    * in `unikraft/lib/posix-user/user.c` remove the `__uk_tls` from these 2 functions:
-    ```C
-    static __uk_tls struct passwd_entry
-    [...]
-    static __uk_tls struct group_entry
     ```
 
     * modify these files as it follows:
