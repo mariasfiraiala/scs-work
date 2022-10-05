@@ -1363,3 +1363,5 @@ ARCHFLAGS-$(call gcc_version_ge, 10, 0)     += -mno-outline-atomics
 * [Core Unikraft virtio issue](https://github.com/unikraft/unikraft/issues/518)
 
 * [Core Unikraft nested macros issue](https://github.com/unikraft/unikraft/issues/532)
+
+* [Correct cross-compiling toolchain for aarch64 issue](https://github.com/unikraft/unikraft/issues/319)
