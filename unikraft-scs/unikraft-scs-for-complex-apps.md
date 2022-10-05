@@ -1337,3 +1337,29 @@ ARCHFLAGS-$(call gcc_version_ge, 10, 0)     += -mno-outline-atomics
             return -EFAULT;
     }
 ```
+
+-------------------------------------------------------------------------------
+
+## Related PRs and issues
+
+### PRs
+
+* [Redis documentation PR](https://github.com/unikraft/app-redis/pull/6)
+
+* [Newlib PR](https://github.com/unikraft/lib-newlib/pull/21)
+
+* [Core Unikraft TLS PR](https://github.com/unikraft/unikraft/pull/513)
+
+* [Core Unikraft virtio PR](https://github.com/unikraft/unikraft/pull/519)
+
+### Issues
+
+* [Newlib limits.h issue](https://github.com/unikraft/lib-newlib/issues/19)
+
+* [Newlib fcntl.h issue](https://github.com/unikraft/lib-newlib/issues/20)
+
+* [Core Unikraft TLS issue](https://github.com/unikraft/unikraft/issues/514)
+
+* [Core Unikraft virtio issue](https://github.com/unikraft/unikraft/issues/518)
+
+* [Core Unikraft nested macros issue](https://github.com/unikraft/unikraft/issues/532)
