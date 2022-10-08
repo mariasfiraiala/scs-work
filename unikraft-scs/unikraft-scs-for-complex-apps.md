@@ -502,7 +502,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
     * test your app: download [this executable](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis-cli) and run it using this command:
     ```
-    $./redis-cli -h 172.44.0.2 -p 6379
+    $ ./redis-cli -h 172.44.0.2 -p 6379
     172.44.0.2:6379> PING
     PONG
     172.44.0.2:6379> exit
@@ -627,7 +627,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
     * test your app: download [this executable](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis-cli) and run it using this command:
     ```
-    $./redis-cli -h 172.44.0.2 -p 6379
+    $ ./redis-cli -h 172.44.0.2 -p 6379
     172.44.0.2:6379> PING
     PONG
     172.44.0.2:6379> exit
@@ -825,7 +825,7 @@ I am testing 3 complex applications `SQLite`, `redis` and `nginx` in order to br
 
     * test your app: download [this executable](https://github.com/unikraft/summer-of-code-2021/blob/main/content/en/docs/sessions/04-complex-applications/sol/03-set-up-and-run-redis/redis-cli) and run it using this command:
     ```
-    $./redis-cli -h 172.44.0.2 -p 6379
+    $ ./redis-cli -h 172.44.0.2 -p 6379
     172.44.0.2:6379> PING
     PONG
     172.44.0.2:6379> exit
